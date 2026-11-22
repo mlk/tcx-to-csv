@@ -10,7 +10,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.help
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 private val POW10 = doubleArrayOf(1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0)
 private val POW10_LONG = longArrayOf(1, 10, 100, 1000, 10000, 100000, 1000000)

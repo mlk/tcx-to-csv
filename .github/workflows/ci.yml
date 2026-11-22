@@ -90,12 +90,16 @@ jobs:
 
       - name: Smoke test the arm64 binary
         run: |
-          BIN=$(find build/bin/macosArm64 -type f -name 'tcx-to-csv.kexe' | grep release | head -1)
-          [ -z "$BIN" ] && BIN=$(find build/bin/macosArm64 -type f -name 'tcx-to-csv.kexe' | head -1)
-          test -n "$BIN" && test -x "$BIN"
+          echo "--- build/bin contents ---"
+          find build/bin -type f | sort || true
+          BIN=$(find build/bin -type f -path '*macosArm64*' \( -name '*.kexe' -o -name 'tcx-to-csv*' \) ! -path '*.dSYM*' | grep release | head -1)
+          if [ -z "$BIN" ]; then
+            BIN=$(find build/bin -type f -path '*macosArm64*' \( -name '*.kexe' -o -name 'tcx-to-csv*' \) ! -path '*.dSYM*' | head -1)
+          fi
+          if [ -z "$BIN" ]; then echo "No macOS arm64 binary was produced" >&2; exit 1; fi
           echo "Testing $BIN"
-          file "$BIN"
-          "$BIN" --help > /dev/null
+          test -x "$BIN"
+          "$BIN" --help
           cat > /tmp/smoke.tcx <<'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">

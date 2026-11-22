@@ -29,7 +29,6 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.clikt)
             implementation(libs.xmlutil.core)
-            implementation(libs.kotlinx.datetime)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
