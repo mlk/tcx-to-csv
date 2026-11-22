@@ -4,13 +4,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
-import java.time.Instant
+import kotlinx.datetime.Instant
 
 class TcxParserTest {
 
     private fun parse(xml: String): List<Trackpoint> {
         val rows = mutableListOf<Trackpoint>()
-        parseTrackpoints(xml.byteInputStream()) { rows.add(it) }
+        parseTrackpoints(xml) { rows.add(it) }
         return rows
     }
 

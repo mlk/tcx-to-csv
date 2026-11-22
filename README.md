@@ -2,24 +2,38 @@
 
 Convert a Garmin/Polar `.tcx` activity file into a compact CSV of trackpoints.
 
+Kotlin Multiplatform: the CLI runs on the JVM and as a native macOS binary (Apple Silicon and Intel).
+
 [![CI](https://github.com/mlk/tcx-to-csv/actions/workflows/ci.yml/badge.svg)](https://github.com/mlk/tcx-to-csv/actions/workflows/ci.yml)
 
 ## Quick start
 
 Prerequisites: **JDK 21+** (the Gradle wrapper handles everything else).
+To build the macOS native binaries you additionally need **macOS with Xcode** installed and its
+license accepted (`sudo xcodebuild -license accept`).
+
+JVM jar:
 
 ```sh
 git clone https://github.com/mlk/tcx-to-csv.git
 cd tcx-to-csv
-./gradlew installDist
-build/install/tcx-to-csv/bin/tcx-to-csv --help
+./gradlew fatJar
+java -jar build/libs/tcx-to-csv-all.jar --help
 ```
 
-Optionally put it on your `PATH`:
+Native macOS binaries:
 
 ```sh
-ln -s "$PWD/build/install/tcx-to-csv/bin/tcx-to-csv" ~/.local/bin/tcx-to-csv
+./gradlew macosArm64Binaries macosX64Binaries   # arm64 (Apple Silicon) and x86_64
+ls build/bin/macosArm64/releaseExecutable/      # -> tcx-to-csv.kexe (and/or debugExecutable/)
+build/bin/macosArm64/releaseExecutable/tcx-to-csv.kexe --help
 ```
+
+> If your machine has the Xcode license unaccepted but you only have the Command Line Tools
+> selected (`xcode-select -p` → `/Library/Developer/CommandLineTools`), Kotlin/Native's Xcode
+> detection fails. Fix: `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+> (and accept the license). Alternatively run Gradle with
+> `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
 
 ## Usage
 
@@ -68,28 +82,40 @@ Notes:
 Layout:
 
 ```
-src/main/kotlin/tcxtocsv/TcxParser.kt   streaming StAX parser for TCX <Trackpoint> elements
-src/main/kotlin/tcxtocsv/TcxToCsv.kt    Clikt command: flags, downsample bucketing, CSV output
-src/test/kotlin/tcxtocsv/               JUnit 5 tests (parser + end-to-end CLI)
-gradle/libs.versions.toml               dependency version catalog
+src/commonMain/kotlin/tcxtocsv/   shared code (parser, CLI, format helpers, IO expect declarations)
+src/jvmMain/kotlin/tcxtocsv/      JVM actuals (java.io)
+src/macosMain/kotlin/tcxtocsv/    macOS actuals (POSIX posix I/O), shared by macosArm64 + macosX64
+src/commonTest/kotlin/tcxtocsv/   parser tests + fixture builder (all targets)
+src/jvmTest/kotlin/tcxtocsv/      end-to-end CLI tests (stdout/stderr capture)
+gradle/libs.versions.toml         dependency version catalog
 ```
 
 Common tasks:
 
 ```sh
-./gradlew build                  # compile + test + coverage verification
-./gradlew test                   # run tests only
-./gradlew check                  # test + JaCoCo coverage gate
-./gradlew installDist            # build the binary in build/install/tcx-to-csv/
-./gradlew --refresh-dependencies # after changing dependency versions
+./gradlew jvmTest                # JVM unit + end-to-end tests
+./gradlew macosArm64Test         # native tests on Apple Silicon (requires Xcode)
+./gradlew check                  # all checks incl. Kover coverage verification
+./gradlew fatJar                 # runnable JVM jar -> build/libs/tcx-to-csv-all.jar
+./gradlew macosArm64Binaries     # native binary -> build/bin/macosArm64/
 ```
 
-Coverage is enforced at **≥ 80% line coverage** (currently ~98%). The HTML report is at
-`build/reports/jacoco/test/html/index.html`.
+Coverage is enforced at **≥ 80% line coverage** on the JVM target (currently ~97%) via Kover;
+report at `build/reports/kover/html/index.html`.
+
+### Dependencies
+
+Managed in `gradle/libs.versions.toml` and kept current by Dependabot
+(github-actions + gradle ecosystems; Kotlin bumps get their own PR). Versions:
+Kotlin 2.4.21, Clikt 5.2.1, xmlutil 1.0.2, kotlinx-datetime.
 
 ### CI
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR: tests, the 80% coverage gate, an
-`installDist` + `--help` smoke check, and uploads the test/coverage reports as artifacts. PRs also get an
-automated review from the Ollama review action, and Dependabot keeps GitHub Actions and the Gradle
-version catalog up to date (minor/patch bumps grouped, Kotlin bumps in their own PRs).
+GitHub Actions (`.github/workflows/ci.yml`):
+
+- **Build & Quality Gates** (ubuntu): `./gradlew check` (tests + 80% coverage gate), `fatJar` build,
+  CLI smoke test, test/coverage reports uploaded as artifacts.
+- **Build macOS native binaries** (macos-latest): builds `arm64` and `x86_64` binaries, smoke-tests
+  the arm64 binary on a sample TCX, uploads both as artifacts.
+
+PRs also get an automated review via the Ollama review action (`.github/workflows/ollama-review.yml`).

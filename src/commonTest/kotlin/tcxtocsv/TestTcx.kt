@@ -56,7 +56,7 @@ object TestTcx {
     fun sequence(n: Int, hr: (Int) -> Int? = { 150 + it }, distance: (Int) -> Double? = { it * 3.0 }): List<String> =
         (0 until n).map { i ->
             trackpoint(
-                time = "2026-11-21T09:%02d:%02dZ".format((i / 60) % 60, i % 60),
+                time = "2026-11-21T09:${((i / 60) % 60).toString().padStart(2, '0')}:${(i % 60).toString().padStart(2, '0')}Z",
                 distance = distance(i),
                 hr = hr(i),
             )
