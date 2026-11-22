@@ -90,9 +90,12 @@ jobs:
 
       - name: Smoke test the arm64 binary
         run: |
-          BIN=$(find build/bin/macosArm64 -type f -name 'tcx-to-csv*' | head -1)
+          BIN=$(find build/bin/macosArm64 -type f -name 'tcx-to-csv.kexe' | grep release | head -1)
+          [ -z "$BIN" ] && BIN=$(find build/bin/macosArm64 -type f -name 'tcx-to-csv.kexe' | head -1)
+          test -n "$BIN" && test -x "$BIN"
           echo "Testing $BIN"
-          "$BIN" --help
+          file "$BIN"
+          "$BIN" --help > /dev/null
           cat > /tmp/smoke.tcx <<'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
